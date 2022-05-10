@@ -1,5 +1,3 @@
-/* @flow */
-
 import Bourne from '@hapi/bourne';
 
 /**
@@ -21,9 +19,9 @@ const blacklist = [ '__proto__', 'constructor', 'prototype' ];
  * @returns {Object}
  */
 export function parseURLParams(
-        url: URL,
-        dontParse: boolean = false,
-        source: string = 'hash'): Object {
+        url,
+        dontParse = false,
+        source = 'hash') {
     const paramStr = source === 'search' ? url.search : url.hash;
     const params = {};
     const paramParts = (paramStr && paramStr.substr(1).split('&')) || [];

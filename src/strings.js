@@ -1,12 +1,10 @@
-// @flow
-
 /**
  * Applies NFKC normalization to the given text.
  *
  * @param {string} text - The text that needs to be normalized.
  * @returns {string} - The normalized text.
  */
-export function normalizeNFKC(text: string) {
+export function normalizeNFKC(text) {
     return text.normalize('NFKC');
 }
 
@@ -17,6 +15,6 @@ export function normalizeNFKC(text: string) {
  * @param {string} text - The text that needs to be normalized.
  * @returns {string} - The normalized text.
  */
-export function normalizeAccents(text: string) {
+export function normalizeAccents(text) {
     return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }

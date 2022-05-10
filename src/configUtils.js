@@ -18,10 +18,10 @@ import { parseURLParams } from './parseURLParams';
  * @returns {void}
  */
 export function setConfigFromURLParams(
-    config: ?Object,
-    interfaceConfig: ?Object,
-    loggingConfig: ?Object,
-    location: Object
+    config,
+    interfaceConfig,
+    loggingConfig,
+    location
 ) {
     const params = parseURLParams(location);
     const json = {};
@@ -88,10 +88,10 @@ export function setConfigFromURLParams(
  * @returns {void}
  */
 export function overrideConfigJSON(
-    config: ?Object,
-    interfaceConfig: ?Object,
-    loggingConfig: ?Object,
-    json: Object
+    config,
+    interfaceConfig,
+    loggingConfig,
+    json
 ) {
     for (const configName of Object.keys(json)) {
         let configObj;
