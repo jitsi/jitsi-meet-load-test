@@ -1,5 +1,3 @@
-// @flow
-
 import { parseURLParams } from './parseURLParams';
 import { normalizeNFKC } from './strings';
 
@@ -53,7 +51,7 @@ export const URI_PROTOCOL_PATTERN = '^([a-z][a-z0-9\\.\\+-]*:)';
  * @private
  * @returns {?string}
  */
-function _fixPathPart(pathPart: ?string) {
+function _fixPathPart(pathPart) {
     return pathPart
         ? pathPart.replace(new RegExp(_ROOM_EXCLUDE_PATTERN, 'g'), '')
         : pathPart;
@@ -72,9 +70,9 @@ function _fixPathPart(pathPart: ?string) {
  * @private
  * @returns {string}
  */
-function _fixURIStringScheme(uri: string) {
+function _fixURIStringScheme(uri) {
     const regex = new RegExp(`${URI_PROTOCOL_PATTERN}+`, 'gi');
-    const match: Array<string> | null = regex.exec(uri);
+    const match = regex.exec(uri);
 
     if (match) {
         // As an implementation convenience, pick up the last scheme and make
@@ -107,7 +105,7 @@ function _fixURIStringScheme(uri: string) {
  * @param {string?} path - The path to convert.
  * @returns {string?}
  */
-export function getBackendSafePath(path: ?string): ?string {
+export function getBackendSafePath(path) {
     if (!path) {
         return path;
     }
@@ -124,7 +122,7 @@ export function getBackendSafePath(path: ?string): ?string {
  * @param {string?} room - The room name to convert.
  * @returns {string?}
  */
-export function getBackendSafeRoomName(room: ?string): ?string {
+export function getBackendSafeRoomName(room) {
     if (!room) {
         return room;
     }
@@ -168,7 +166,7 @@ export function getBackendSafeRoomName(room: ?string): ?string {
  * @returns {string} - The (Web application) context root defined by the
  * specified {@code location} (URI).
  */
-export function getLocationContextRoot({ pathname }: { pathname: string }) {
+export function getLocationContextRoot({ pathname }) {
     const contextRootEndIndex = pathname.lastIndexOf('/');
 
     return (
@@ -218,15 +216,15 @@ function _objectToURLParamsArray(obj = {}) {
  *     search: string
  * }}
  */
-export function parseStandardURIString(str: string) {
+export function parseStandardURIString(str) {
     /* eslint-disable no-param-reassign */
 
-    const obj: Object = {
+    const obj = {
         toString: _standardURIToString
     };
 
     let regex;
-    let match: Array<string> | null;
+    let match;
 
     // XXX A URI string as defined by RFC 3986 does not contain any whitespace.
     // Usually, a browser will have already encoded any whitespace. In order to
@@ -247,7 +245,7 @@ export function parseStandardURIString(str: string) {
     regex = new RegExp(`^${_URI_AUTHORITY_PATTERN}`, 'gi');
     match = regex.exec(str);
     if (match) {
-        let authority: string = match[1].substring(/* // */ 2);
+        let authority = match[1].substring(/* // */ 2);
 
         str = str.substring(regex.lastIndex);
 
@@ -276,7 +274,7 @@ export function parseStandardURIString(str: string) {
     regex = new RegExp(`^${_URI_PATH_PATTERN}`, 'gi');
     match = regex.exec(str);
 
-    let pathname: ?string;
+    let pathname;
 
     if (match) {
         pathname = match[1];
@@ -329,7 +327,7 @@ export function parseStandardURIString(str: string) {
  *     search: string
  * }}
  */
-export function parseURIString(uri: ?string) {
+export function parseURIString(uri) {
     if (typeof uri !== 'string') {
         return undefined;
     }
@@ -371,7 +369,7 @@ export function parseURIString(uri: ?string) {
  * function is invoked on such an instance.
  * @returns {string}
  */
-function _standardURIToString(thiz: ?Object) {
+function _standardURIToString(thiz) {
     // eslint-disable-next-line no-invalid-this
     const { hash, host, pathname, protocol, search } = thiz || this;
     let str = '';
@@ -395,7 +393,7 @@ function _standardURIToString(thiz: ?Object) {
  * @param {string} text - The text to decode.
  * @returns {string}
  */
-export function safeDecodeURIComponent(text: string) {
+export function safeDecodeURIComponent(text) {
     try {
         return decodeURIComponent(text);
     } catch (e) {
@@ -418,7 +416,7 @@ export function safeDecodeURIComponent(text: string) {
  * @returns {string} - A {@code String} representation of the specified
  * {@code obj} which is supposed to represent a URL.
  */
-export function toURLString(obj: ?(Object | string)): ?string {
+export function toURLString(obj) {
     let str;
 
     switch (typeof obj) {
@@ -449,7 +447,7 @@ export function toURLString(obj: ?(Object | string)): ?string {
  * @returns {string} - A {@code String} representation of the specified
  * {@code Object}.
  */
-export function urlObjectToString(o: Object): ?string {
+export function urlObjectToString(o) {
     // First normalize the given url. It come as o.url or split into o.serverURL
     // and o.room.
     let tmp;
@@ -466,7 +464,7 @@ export function urlObjectToString(o: Object): ?string {
 
     // protocol
     if (!url.protocol) {
-        let protocol: ?string = o.protocol || o.scheme;
+        let protocol = o.protocol || o.scheme;
 
         if (protocol) {
             // Protocol is supposed to be the scheme and the final ':'. Anyway,
@@ -484,7 +482,7 @@ export function urlObjectToString(o: Object): ?string {
         //
         // It may be host/hostname and pathname with the latter denoting the
         // tenant.
-        const domain: ?string = o.domain || o.host || o.hostname;
+        const domain = o.domain || o.host || o.hostname;
 
         if (domain) {
             const { host, hostname, pathname: contextRoot, port }
@@ -580,7 +578,7 @@ export function urlObjectToString(o: Object): ?string {
  * @param {Object} hashParamsToAdd - A map with the parameters to be set.
  * @returns {URL} - The new URL.
  */
-export function addHashParamsToURL(url: URL, hashParamsToAdd: Object = {}) {
+export function addHashParamsToURL(url, hashParamsToAdd) {
     const params = parseURLParams(url);
     const urlParamsArray = _objectToURLParamsArray({
         ...params,
@@ -600,6 +598,6 @@ export function addHashParamsToURL(url: URL, hashParamsToAdd: Object = {}) {
  * @param {string} uri - The URI to decode.
  * @returns {string}
  */
-export function getDecodedURI(uri: string) {
+export function getDecodedURI(uri) {
     return decodeURI(uri.replace(/^https?:\/\//i, ''));
 }
