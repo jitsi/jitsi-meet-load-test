@@ -345,6 +345,29 @@ class LoadTestClient {
         }
     }
 
+    onConferenceFailed(error, url, from) {
+        console.error(error);
+        if (error !== JitsiMeetJS.errors.conference.REDIRECTED) {
+            return;
+        }
+
+        this.connection.disconnect().then(() => {
+            const oldDomain = config.hosts.domain;
+
+            config.hosts.domain = url;
+            config.visitorTo = `${roomName.toLowerCase()}@${config.hosts.muc}`;
+            config.hosts.muc = config.hosts.muc.replace(oldDomain, config.hosts.domain);
+            config.hosts.visitorFocus = from;
+
+            config.bosh = `//${url}/http-bind`;
+            config.websocket = `wss://${url}/xmpp-websocket`;
+            config.websocketKeepAliveUrl = `https://${url}/_unlock`;
+
+            updateConfig();
+            this.connect();
+        });
+    }
+
     /**
      * This function is called to connect.
      */
@@ -372,6 +395,7 @@ class LoadTestClient {
         this.room.on(JitsiMeetJS.events.conference.USER_JOINED, this.onUserJoined.bind(this));
         this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
         this.room.on(JitsiMeetJS.events.conference.PRIVATE_MESSAGE_RECEIVED, this.onPrivateMessage.bind(this));
+        this.room.on(JitsiMeetJS.events.conference.CONFERENCE_FAILED, this.onConferenceFailed.bind(this));
         if (stageView) {
             this.room.on(JitsiMeetJS.events.conference.DOMINANT_SPEAKER_CHANGED, this.onDominantSpeakerChanged.bind(this));
         }
@@ -503,14 +527,17 @@ function unload() {
 $(window).bind('beforeunload', unload);
 $(window).bind('unload', unload);
 
-JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
+JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.TRACE);
 
-JitsiMeetJS.init(config);
+function updateConfig() {
+    JitsiMeetJS.init(config);
 
-config.serviceUrl = config.bosh = `${config.websocket || config.bosh}?room=${roomName.toLowerCase()}`;
-if (config.websocketKeepAliveUrl) {
-    config.websocketKeepAliveUrl += `?room=${roomName.toLowerCase()}`;
+    config.serviceUrl = config.bosh = `${config.websocket || config.bosh}?room=${roomName.toLowerCase()}`;
+    if (config.websocketKeepAliveUrl) {
+        config.websocketKeepAliveUrl += `?room=${roomName.toLowerCase()}`;
+    }
 }
+updateConfig();
 
 function startClient(i) {
     clients[i] = new LoadTestClient(i);
