@@ -22,7 +22,7 @@ const {
 } = params;
 
 let {
-    localAudio = config.disableInitialGUM !== true && config.startWithAudioMuted !== true
+    localAudio = !config.disableInitialGUM && !config.startWithAudioMuted
 } = params;
 
 const { room: roomName } = parseURIString(window.location.toString());
@@ -153,12 +153,7 @@ class LoadTestClient {
             }
             else {
                 // See if we created it but haven't added it.
-                for (let i = 0; i < this.localTracks.length; i++) {
-                    if (this.localTracks[i].getType() === 'audio') {
-                        localAudioTrack = this.localTracks[i];
-                        break;
-                    }
-                }
+                localAudioTrack = this.localTracks.find(track => track.getType() === 'audio')
                 if (localAudioTrack) {
                     localAudioTrack.unmute();
                     this.room.replaceTrack(null, localAudioTrack);
@@ -168,7 +163,7 @@ class LoadTestClient {
                         .then(([audioTrack]) => audioTrack)
                         .catch(console.error)
                         .then(audioTrack => {
-                            return this.room.replaceTrack(null, audioTrack);
+                            return this.room.addTrack(audioTrack);
                         })
                 }
             }
