@@ -27,6 +27,15 @@ let {
 
 const { room: roomName } = parseURIString(window.location.toString());
 
+function appendURLParam(url, name, value) {
+    const newUrl = new URL(url);
+
+    newUrl.searchParams.append(name, value);
+
+    return newUrl.toString();
+}
+
+
 class LoadTestClient {
     constructor(id, config) {
         this.id = id;
@@ -45,9 +54,9 @@ class LoadTestClient {
 
     updateConfig() {
         this.config.serviceUrl = this.config.bosh
-            = `${this.config.websocket || this.config.bosh}?room=${roomName.toLowerCase()}`;
+            = appendURLParam(this.config.websocket || this.config.bosh, "room", roomName.toLowerCase());
         if (this.config.websocketKeepAliveUrl) {
-            this.config.websocketKeepAliveUrl += `?room=${roomName.toLowerCase()}`;
+            this.config.websocketKeepAliveUrl = appendURLParam(this.config.websocketKeepAliveUrl, "room", roomName.toLowerCase());
         }
     }
 
@@ -400,9 +409,9 @@ class LoadTestClient {
             this.config.focusUserJid = from;
             this.config.disableFocus = true;
 
-            this.config.bosh += `?vnode=${vnode}`;
-            this.config.websocket += `?vnode=${vnode}`;
-            this.config.websocketKeepAliveUrl += `?vnode=${vnode}`;
+            this.config.bosh = appendURLParam(this.config.bosh, "vnode", vnode);
+            this.config.websocket = appendURLParam(this.config.websocket, "vnode", vnode);
+            this.config.websocketKeepAliveUrl = appendURLParam(this.config.websocketKeepAliveUrl, "vnode", vnode);
 
             this.updateConfig();
             this.connect();
