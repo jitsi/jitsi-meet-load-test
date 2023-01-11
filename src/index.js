@@ -385,7 +385,7 @@ class LoadTestClient {
         }
     }
 
-    onConferenceFailed(error, url, from) {
+    onConferenceFailed(error, vnode, from) {
         console.error(error);
         if (error !== JitsiMeetJS.errors.conference.REDIRECTED) {
             return;
@@ -394,15 +394,15 @@ class LoadTestClient {
         this.connection.disconnect().then(() => {
             const oldDomain = this.config.hosts.domain;
 
-            this.config.hosts.domain = url;
-            this.config.visitorTo = `${roomName.toLowerCase()}@${this.config.hosts.muc}`;
+            this.config.hosts.domain = `${vnode}.meet.jitsi`;
+            //this.config.visitorTo = `${roomName.toLowerCase()}@${this.config.hosts.muc}`;
             this.config.hosts.muc = this.config.hosts.muc.replace(oldDomain, this.config.hosts.domain);
             this.config.focusUserJid = from;
             this.config.disableFocus = true;
 
-            this.config.bosh = `//${url}/http-bind`;
-            this.config.websocket = `wss://${url}/xmpp-websocket`;
-            this.config.websocketKeepAliveUrl = `https://${url}/_unlock`;
+            this.config.bosh += `?vnode=${vnode}`;
+            this.config.websocket += `?vnode=${vnode}`;
+            this.config.websocketKeepAliveUrl += `?vnode=${vnode}`;
 
             this.updateConfig();
             this.connect();
