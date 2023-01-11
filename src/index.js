@@ -368,7 +368,8 @@ class LoadTestClient {
             this.config.hosts.domain = url;
             this.config.visitorTo = `${roomName.toLowerCase()}@${this.config.hosts.muc}`;
             this.config.hosts.muc = this.config.hosts.muc.replace(oldDomain, this.config.hosts.domain);
-            this.config.hosts.visitorFocus = from;
+            this.config.focusUserJid = from;
+            this.config.disableFocus = true;
 
             this.config.bosh = `//${url}/http-bind`;
             this.config.websocket = `wss://${url}/xmpp-websocket`;
