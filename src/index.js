@@ -22,7 +22,7 @@ const {
 } = params;
 
 let {
-    localAudio = config.startWithAudioMuted !== true,
+    localAudio = !config.disableInitialGUM && !config.startWithAudioMuted
 } = params;
 
 const { room: roomName } = parseURIString(window.location.toString());
@@ -149,6 +149,35 @@ class LoadTestClient {
             /* jitsi-meet's current Tile View behavior. */
             const ids = this.room.getParticipants().map(participant => participant.getId());
             this.room.selectParticipants(ids);
+        }
+    }
+
+    muteAudio(mute) {
+        let localAudioTrack = this.room.getLocalAudioTrack();
+
+        if (mute) {
+            localAudioTrack?.mute();
+        }
+        else {
+            if (localAudioTrack) {
+                localAudioTrack.unmute();
+            }
+            else {
+                // See if we created it but haven't added it.
+                localAudioTrack = this.localTracks.find(track => track.getType() === 'audio')
+                if (localAudioTrack) {
+                    localAudioTrack.unmute();
+                    this.room.replaceTrack(null, localAudioTrack);
+                }
+                else {
+                    JitsiMeetJS.createLocalTracks({ devices: ['audio'] })
+                        .then(([audioTrack]) => audioTrack)
+                        .catch(console.error)
+                        .then(audioTrack => {
+                            return this.room.addTrack(audioTrack);
+                        })
+                }
+            }
         }
     }
 
@@ -418,8 +447,9 @@ class LoadTestClient {
             devices.push('video');
         }
 
-        // we always create audio local tracks
-        devices.push('audio');
+        if (!config.disableInitialGUM) {
+            devices.push('audio');
+        }
 
         if (devices.length > 0) {
             JitsiMeetJS.createLocalTracks({ devices })
@@ -473,23 +503,9 @@ window.APP = {
             return clients[0] && clients[0].room && room.getConnectionState();
         },
         muteAudio(mute) {
-            localAudio = mute;
+            localAudio = !mute;
             for (let j = 0; j < clients.length; j++) {
-                for (let i = 0; i < clients[j].localTracks.length; i++) {
-                    if (clients[j].localTracks[i].getType() === 'audio') {
-                        if (mute) {
-                            clients[j].localTracks[i].mute();
-                        }
-                        else {
-                            clients[j].localTracks[i].unmute();
-                            
-                            // if track was not added we need to add it to the peerconnection
-                            if (!clients[j].room.getLocalAudioTrack()) {
-                                clients[j].room.replaceTrack(null, clients[j].localTracks[i]);
-                            }
-                        }
-                    }
-                }
+                clients[j].muteAudio(mute);
             }
         }
     },
