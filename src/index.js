@@ -24,8 +24,17 @@ const {
 
 const { room: roomName } = parseURIString(window.location.toString());
 
+function appendURLParam(url, name, value) {
+    const newUrl = new URL(url);
+
+    newUrl.searchParams.append(name, value);
+
+    return newUrl.toString();
+}
+
+
 class LoadTestClient {
-    constructor(id) {
+    constructor(id, config) {
         this.id = id;
         this.connection = null;
         this.connected = false;
@@ -35,7 +44,18 @@ class LoadTestClient {
         this.remoteTracks = {};
         this.maxFrameHeight = 0;
         this.selectedParticipant = null;
+        this.config = config;
         this.localAudio = localAudio;
+
+        this.updateConfig();
+    }
+
+    updateConfig() {
+        this.config.serviceUrl = this.config.bosh
+            = appendURLParam(this.config.websocket || this.config.bosh, "room", roomName.toLowerCase());
+        if (this.config.websocketKeepAliveUrl) {
+            this.config.websocketKeepAliveUrl = appendURLParam(this.config.websocketKeepAliveUrl, "room", roomName.toLowerCase());
+        }
     }
 
     /**
@@ -75,9 +95,9 @@ class LoadTestClient {
             return;
         }
 
-        let lastN = typeof config.channelLastN === 'undefined' ? -1 : config.channelLastN;
+        let lastN = typeof this.config.channelLastN === 'undefined' ? -1 : this.config.channelLastN;
 
-        const limitedLastN = limitLastN(this.numParticipants, validateLastNLimits(config.lastNLimits));
+        const limitedLastN = limitLastN(this.numParticipants, validateLastNLimits(this.config.lastNLimits));
 
         if (limitedLastN !== undefined) {
             lastN = lastN === -1 ? limitedLastN : Math.min(limitedLastN, lastN);
@@ -374,6 +394,30 @@ class LoadTestClient {
         }
     }
 
+    onConferenceFailed(error, vnode, from) {
+        console.error(error);
+        if (error !== JitsiMeetJS.errors.conference.REDIRECTED) {
+            return;
+        }
+
+        this.connection.disconnect().then(() => {
+            const oldDomain = this.config.hosts.domain;
+
+            this.config.hosts.domain = `${vnode}.meet.jitsi`;
+            //this.config.visitorTo = `${roomName.toLowerCase()}@${this.config.hosts.muc}`;
+            this.config.hosts.muc = this.config.hosts.muc.replace(oldDomain, this.config.hosts.domain);
+            this.config.focusUserJid = from;
+            this.config.disableFocus = true;
+
+            this.config.bosh = appendURLParam(this.config.bosh, "vnode", vnode);
+            this.config.websocket = appendURLParam(this.config.websocket, "vnode", vnode);
+            this.config.websocketKeepAliveUrl = appendURLParam(this.config.websocketKeepAliveUrl, "vnode", vnode);
+
+            this.updateConfig();
+            this.connect();
+        });
+    }
+
     /**
      * This function is called to connect.
      */
@@ -382,7 +426,7 @@ class LoadTestClient {
         this._onConnectionFailed = this.onConnectionFailed.bind(this)
         this._disconnect = this.disconnect.bind(this)
 
-        this.connection = new JitsiMeetJS.JitsiConnection(null, null, config);
+        this.connection = new JitsiMeetJS.JitsiConnection(null, null, this.config);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED, this._onConnectionSuccess);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_FAILED, this._onConnectionFailed);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, this._disconnect);
@@ -393,7 +437,7 @@ class LoadTestClient {
      * That function is called when connection is established successfully
      */
     onConnectionSuccess() {
-        this.room = this.connection.initJitsiConference(roomName.toLowerCase(), config);
+        this.room = this.connection.initJitsiConference(roomName.toLowerCase(), this.config);
         this.room.on(JitsiMeetJS.events.conference.STARTED_MUTED, this.onStartMuted.bind(this));
         this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
         this.room.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
@@ -401,6 +445,7 @@ class LoadTestClient {
         this.room.on(JitsiMeetJS.events.conference.USER_JOINED, this.onUserJoined.bind(this));
         this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
         this.room.on(JitsiMeetJS.events.conference.PRIVATE_MESSAGE_RECEIVED, this.onPrivateMessage.bind(this));
+        this.room.on(JitsiMeetJS.events.conference.CONFERENCE_FAILED, this.onConferenceFailed.bind(this));
         if (stageView) {
             this.room.on(JitsiMeetJS.events.conference.DOMINANT_SPEAKER_CHANGED, this.onDominantSpeakerChanged.bind(this));
         }
@@ -523,17 +568,12 @@ function unload() {
 $(window).bind('beforeunload', unload);
 $(window).bind('unload', unload);
 
-JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
-
+JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.TRACE);
 JitsiMeetJS.init(config);
 
-config.serviceUrl = config.bosh = `${config.websocket || config.bosh}?room=${roomName.toLowerCase()}`;
-if (config.websocketKeepAliveUrl) {
-    config.websocketKeepAliveUrl += `?room=${roomName.toLowerCase()}`;
-}
-
 function startClient(i) {
-    clients[i] = new LoadTestClient(i);
+    // dirty copy of the config to be per client
+    clients[i] = new LoadTestClient(i, JSON.parse(JSON.stringify(config)));
     clients[i].connect();
     if (i + 1 < numClients) {
         setTimeout(() => { startClient(i+1) }, clientInterval)
