@@ -13,16 +13,13 @@ const params = parseURLParams(window.location, false, 'hash');
 const { isHuman = false } = params;
 const {
     localVideo = config.startWithVideoMuted !== true,
+    localAudio = !config.disableInitialGUM && !config.startWithAudioMuted,
     remoteVideo = isHuman,
     remoteAudio = isHuman,
     autoPlayVideo = config.testing.noAutoPlayVideo !== true,
     stageView = config.disableTileView,
     numClients = 1,
     clientInterval = 100 // ms
-} = params;
-
-let {
-    localAudio = !config.disableInitialGUM && !config.startWithAudioMuted
 } = params;
 
 const { room: roomName } = parseURIString(window.location.toString());
@@ -48,6 +45,7 @@ class LoadTestClient {
         this.maxFrameHeight = 0;
         this.selectedParticipant = null;
         this.config = config;
+        this.localAudio = localAudio;
 
         this.updateConfig();
     }
@@ -162,6 +160,8 @@ class LoadTestClient {
     }
 
     muteAudio(mute) {
+        this.localAudio = !mute;
+
         let localAudioTrack = this.room.getLocalAudioTrack();
 
         if (mute) {
@@ -241,7 +241,7 @@ class LoadTestClient {
 
                 this.room.addTrack(this.localTracks[i]);
             } else {
-                if (localAudio) {
+                if (this.localAudio) {
                     this.room.addTrack(this.localTracks[i]);
                 } else {
                     this.localTracks[i].mute();
@@ -302,7 +302,7 @@ class LoadTestClient {
         setTimeout(() => {
             const localAudioTrack = this.room.getLocalAudioTrack();
 
-            if (localAudio && localAudioTrack && localAudioTrack.isMuted()) {
+            if (this.localAudio && localAudioTrack && localAudioTrack.isMuted()) {
                 localAudioTrack.unmute();
             }
 
@@ -511,10 +511,14 @@ window.APP = {
         getConnectionState() {
             return clients[0] && clients[0].room && room.getConnectionState();
         },
-        muteAudio(mute) {
-            localAudio = !mute;
-            for (let j = 0; j < clients.length; j++) {
-                clients[j].muteAudio(mute);
+        muteAudio(mute, num) {
+            if (num === undefined) {
+                for (let j = 0; j < clients.length; j++) {
+                    clients[j].muteAudio(mute);
+                }
+            }
+            else {
+                clients[num].muteAudio(mute);
             }
         }
     },
