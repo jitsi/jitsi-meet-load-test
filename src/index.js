@@ -291,6 +291,12 @@ class LoadTestClient {
      */
     onConferenceJoined() {
         console.log(`Participant ${this.id} Conference joined`);
+
+        // Delay processing USER_JOINED events until the MUC is fully joined,
+        // otherwise the apparent conference size will be wrong.
+        this.numParticipants = this.room.getParticipantCount();
+        this.setNumberOfParticipants();
+        this.room.on(JitsiMeetJS.events.conference.USER_JOINED, this.onUserJoined.bind(this));
     }
 
     /**
@@ -442,7 +448,6 @@ class LoadTestClient {
         this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
         this.room.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
         this.room.on(JitsiMeetJS.events.conference.CONNECTION_ESTABLISHED, this.onConnectionEstablished.bind(this));
-        this.room.on(JitsiMeetJS.events.conference.USER_JOINED, this.onUserJoined.bind(this));
         this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
         this.room.on(JitsiMeetJS.events.conference.PRIVATE_MESSAGE_RECEIVED, this.onPrivateMessage.bind(this));
         this.room.on(JitsiMeetJS.events.conference.CONFERENCE_FAILED, this.onConferenceFailed.bind(this));
