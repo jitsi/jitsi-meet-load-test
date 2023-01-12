@@ -77,7 +77,7 @@ class LoadTestClient {
             } else if (this.numParticipants <= 4) {
                 newMaxFrameHeight = 360;
             } else {
-                this.newMaxFrameHeight = 180;
+                newMaxFrameHeight = 180;
             }
         }
 
