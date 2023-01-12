@@ -295,7 +295,7 @@ class LoadTestClient {
         // Delay processing USER_JOINED events until the MUC is fully joined,
         // otherwise the apparent conference size will be wrong.
         this.numParticipants = this.room.getParticipantCount();
-        this.setNumnerOfParticipants();
+        this.setNumberOfParticipants();
         this.room.on(JitsiMeetJS.events.conference.USER_JOINED, this.onUserJoined.bind(this));
     }
 
