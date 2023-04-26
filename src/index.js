@@ -535,7 +535,7 @@ window.APP = {
         return clients[0]?.connection;
     },
     get numParticipants() {
-        return clients[0]?.remoteParticipants;
+        return clients[0]?.numParticipants;
     },
     get localTracks() {
         return clients[0]?.localTracks;
