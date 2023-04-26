@@ -37,16 +37,16 @@ class LoadTestClient {
     constructor(id, config) {
         this.id = id;
         this.connection = null;
-        this.connected = false;
+        this.dataChannelOpen = false;
         this.room = null;
         this.numParticipants = 1;
         this.localTracks = [];
         this.remoteTracks = {};
-        this.maxFrameHeight = 0;
-        this.selectedParticipant = null;
+        this.onStageParticipant = null;
         this.config = config;
         this.localAudio = localAudio;
         this.visitor = false;
+        this.receiverConstraints = { onStageSources: [], defaultConstraints: {} };
 
         this.updateConfig();
     }
@@ -60,10 +60,10 @@ class LoadTestClient {
     }
 
     /**
-     * Simple emulation of jitsi-meet's screen layout behavior
+     * Simple emulation of jitsi-meet's receiver constraints behavior
      */
-    updateMaxFrameHeight() {
-        if (!this.connected) {
+    updateReceiverConstraints() {
+        if (!this.dataChannelOpen) {
             return;
         }
 
@@ -82,20 +82,6 @@ class LoadTestClient {
             }
         }
 
-        if (this.room && this.maxFrameHeight !== newMaxFrameHeight) {
-            this.maxFrameHeight = newMaxFrameHeight;
-            this.room.setReceiverVideoConstraint(this.maxFrameHeight);
-        }
-    }
-
-    /**
-     * Simple emulation of jitsi-meet's lastN behavior
-     */
-    updateLastN() {
-        if (!this.connected) {
-            return;
-        }
-
         let lastN = typeof this.config.channelLastN === 'undefined' ? -1 : this.config.channelLastN;
 
         const limitedLastN = limitLastN(this.numParticipants, validateLastNLimits(this.config.lastNLimits));
@@ -104,11 +90,31 @@ class LoadTestClient {
             lastN = lastN === -1 ? limitedLastN : Math.min(limitedLastN, lastN);
         }
 
-        if (lastN === this.room.getLastN()) {
-            return;
+        let onStageSource;
+
+        if (this.onStageParticipant) {
+            const onStageParticipantTrack = this.room.jvbJingleSession?.peerconnection?.getRemoteTracks(this.onStageParticipant)?.find(track => track.getType() === 'video');
+            if (onStageParticipantTrack) {
+                onStageSource = onStageParticipantTrack.getSourceName();
+            }
         }
 
-        this.room.setLastN(lastN);
+        if (this.room) {
+            if (this.receiverConstraints.lastN !== lastN ||
+                 this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight ||
+                 this.receiverConstraints.onStageSources[0] !== onStageSource) {
+                    this.receiverConstraints.lastN = lastN;
+                    this.receiverConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
+                    if (onStageSource) {
+                        this.receiverConstraints.onStageSources[0] = onStageSource
+                    }
+                    else {
+                        this.receiverConstraints.onStageSources.length = 0
+                    }
+
+                    this.room.setReceiverConstraints(this.receiverConstraints)
+                 }
+        }
     }
 
     /**
@@ -123,41 +129,22 @@ class LoadTestClient {
      * Simple emulation of jitsi-meet's stage view participant selection behavior.
      * Doesn't take into account pinning or screen sharing, and the initial behavior
      * is slightly different.
-     * @returns Whether the selected participant changed.
+     * @returns Whether the on stage participant changed.
      */
     selectStageViewParticipant(selected, previous) {
-        let newSelectedParticipant;
+        let newOnStageParticipant;
 
         if (this.isValidStageViewParticipant(selected)) {
-            newSelectedParticipant = selected;
+            newOnStageParticipant = selected;
         }
         else {
-            newSelectedParticipant = previous.find(isValidStageViewParticipant);
+            newOnStageParticipant = previous.find(isValidStageViewParticipant);
         }
-        if (newSelectedParticipant && newSelectedParticipant !== this.selectedParticipant) {
-            this.selectedParticipant = newSelectedParticipant;
+        if (newOnStageParticipant && newOnStageParticipant !== this.onStageParticipant) {
+            this.onStageParticipant = newOnStageParticipant;
             return true;
         }
         return false;
-    }
-
-    /**
-     * Simple emulation of jitsi-meet's selectParticipants behavior
-     */
-    selectParticipants() {
-        if (!this.connected) {
-            return;
-        }
-        if (stageView) {
-            if (this.selectedParticipant) {
-                this.room.selectParticipants([this.selectedParticipant]);
-            }
-        }
-        else {
-            /* jitsi-meet's current Tile View behavior. */
-            const ids = this.room.getParticipants().map(participant => participant.getId());
-            this.room.selectParticipants(ids);
-        }
     }
 
     muteAudio(mute) {
@@ -202,22 +189,16 @@ class LoadTestClient {
         if (this.id === 0) {
             $('#participants').text(this.numParticipants);
         }
-        if (!stageView) {
-            this.selectParticipants();
-            this.updateMaxFrameHeight();
-        }
-        this.updateLastN();
+        this.updateReceiverConstraints();
     }
 
     /**
      * Called when ICE connects
      */
-    onConnectionEstablished() {
-        this.connected = true;
+    onDataChannelOpened() {
+        this.dataChannelOpen = true;
 
-        this.selectParticipants();
-        this.updateMaxFrameHeight();
-        this.updateLastN();
+        this.updateReceiverConstraints();
     }
 
     /**
@@ -226,9 +207,8 @@ class LoadTestClient {
      */
     onDominantSpeakerChanged(selected, previous) {
         if (this.selectStageViewParticipant(selected, previous)) {
-            this.selectParticipants();
+            this.updateReceiverConstraints();
         }
-        this.updateMaxFrameHeight();
     }
 
     /**
@@ -461,7 +441,7 @@ class LoadTestClient {
         this.room.on(JitsiMeetJS.events.conference.STARTED_MUTED, this.onStartMuted.bind(this));
         this.room.on(JitsiMeetJS.events.conference.TRACK_ADDED, this.onRemoteTrack.bind(this));
         this.room.on(JitsiMeetJS.events.conference.CONFERENCE_JOINED, this.onConferenceJoined.bind(this));
-        this.room.on(JitsiMeetJS.events.conference.CONNECTION_ESTABLISHED, this.onConnectionEstablished.bind(this));
+        this.room.on(JitsiMeetJS.events.conference.DATA_CHANNEL_OPENED, this.onDataChannelOpened.bind(this));
         this.room.on(JitsiMeetJS.events.conference.USER_LEFT, this.onUserLeft.bind(this));
         this.room.on(JitsiMeetJS.events.conference.PRIVATE_MESSAGE_RECEIVED, this.onPrivateMessage.bind(this));
         this.room.on(JitsiMeetJS.events.conference.CONFERENCE_FAILED, this.onConferenceFailed.bind(this));
@@ -493,8 +473,6 @@ class LoadTestClient {
         } else {
             this.room.join();
         }
-
-        this.updateMaxFrameHeight();
     }
 
     /**
