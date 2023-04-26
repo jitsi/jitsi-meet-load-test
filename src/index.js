@@ -46,7 +46,7 @@ class LoadTestClient {
         this.config = config;
         this.localAudio = localAudio;
         this.visitor = false;
-        this.receiverConstraints = { defaultConstraints: {} };
+        this.receiverConstraints = { selectedSources: [], defaultConstraints: {} };
 
         this.updateConfig();
     }
@@ -90,12 +90,27 @@ class LoadTestClient {
             lastN = lastN === -1 ? limitedLastN : Math.min(limitedLastN, lastN);
         }
 
-        /* TODO set selected participant source when in stage view */
+        let selectedSource;
+
+        if (this.selectedParticipant) {
+            const selectedParticipantTrack = this.room.jvbJingleSession?.peerconnection?.getRemoteTracks(this.selectedParticipant)?.find(track => track.getType() === 'video');
+            if (selectedParticipantTrack) {
+                selectedSource = selectedParticipantTrack.getSourceName();
+            }
+        }
+
         if (this.room) {
             if (this.receiverConstraints.lastN !== lastN ||
-                 this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight) {
+                 this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight ||
+                 this.receiverConstraints.selectedSources[0] !== selectedSource) {
                     this.receiverConstraints.lastN = lastN;
                     this.receiverConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
+                    if (selectedSource) {
+                        this.receiverConstraints.selectedSources[0] = selectedSource
+                    }
+                    else {
+                        this.receiverConstraints.selectedSources.length = 0
+                    }
 
                     this.room.setReceiverConstraints(this.receiverConstraints)
                  }
@@ -117,7 +132,6 @@ class LoadTestClient {
      * @returns Whether the selected participant changed.
      */
     selectStageViewParticipant(selected, previous) {
-        // TODO this needs to select a source instead
         let newSelectedParticipant;
 
         if (this.isValidStageViewParticipant(selected)) {
