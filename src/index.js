@@ -42,11 +42,11 @@ class LoadTestClient {
         this.numParticipants = 1;
         this.localTracks = [];
         this.remoteTracks = {};
-        this.selectedParticipant = null;
+        this.onStageParticipant = null;
         this.config = config;
         this.localAudio = localAudio;
         this.visitor = false;
-        this.receiverConstraints = { selectedSources: [], defaultConstraints: {} };
+        this.receiverConstraints = { onStageSources: [], defaultConstraints: {} };
 
         this.updateConfig();
     }
@@ -90,26 +90,26 @@ class LoadTestClient {
             lastN = lastN === -1 ? limitedLastN : Math.min(limitedLastN, lastN);
         }
 
-        let selectedSource;
+        let onStageSource;
 
-        if (this.selectedParticipant) {
-            const selectedParticipantTrack = this.room.jvbJingleSession?.peerconnection?.getRemoteTracks(this.selectedParticipant)?.find(track => track.getType() === 'video');
-            if (selectedParticipantTrack) {
-                selectedSource = selectedParticipantTrack.getSourceName();
+        if (this.onStageParticipant) {
+            const onStageParticipantTrack = this.room.jvbJingleSession?.peerconnection?.getRemoteTracks(this.onStageParticipant)?.find(track => track.getType() === 'video');
+            if (onStageParticipantTrack) {
+                onStageSource = onStageParticipantTrack.getSourceName();
             }
         }
 
         if (this.room) {
             if (this.receiverConstraints.lastN !== lastN ||
                  this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight ||
-                 this.receiverConstraints.selectedSources[0] !== selectedSource) {
+                 this.receiverConstraints.onStageSources[0] !== onStageSource) {
                     this.receiverConstraints.lastN = lastN;
                     this.receiverConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
-                    if (selectedSource) {
-                        this.receiverConstraints.selectedSources[0] = selectedSource
+                    if (onStageSource) {
+                        this.receiverConstraints.onStageSources[0] = onStageSource
                     }
                     else {
-                        this.receiverConstraints.selectedSources.length = 0
+                        this.receiverConstraints.onStageSources.length = 0
                     }
 
                     this.room.setReceiverConstraints(this.receiverConstraints)
@@ -129,19 +129,19 @@ class LoadTestClient {
      * Simple emulation of jitsi-meet's stage view participant selection behavior.
      * Doesn't take into account pinning or screen sharing, and the initial behavior
      * is slightly different.
-     * @returns Whether the selected participant changed.
+     * @returns Whether the on stage participant changed.
      */
     selectStageViewParticipant(selected, previous) {
-        let newSelectedParticipant;
+        let newOnStageParticipant;
 
         if (this.isValidStageViewParticipant(selected)) {
-            newSelectedParticipant = selected;
+            newOnStageParticipant = selected;
         }
         else {
-            newSelectedParticipant = previous.find(isValidStageViewParticipant);
+            newOnStageParticipant = previous.find(isValidStageViewParticipant);
         }
-        if (newSelectedParticipant && newSelectedParticipant !== this.selectedParticipant) {
-            this.selectedParticipant = newSelectedParticipant;
+        if (newOnStageParticipant && newOnStageParticipant !== this.onStageParticipant) {
+            this.onStageParticipant = newOnStageParticipant;
             return true;
         }
         return false;
