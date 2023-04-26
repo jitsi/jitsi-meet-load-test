@@ -431,6 +431,8 @@ class LoadTestClient {
             this.config.websocket = appendURLParam(this.config.websocket, "vnode", vnode);
             this.config.websocketKeepAliveUrl = appendURLParam(this.config.websocketKeepAliveUrl, "vnode", vnode);
 
+            this.localTracks.forEach((track) => track.mute());
+
             this.updateConfig();
             this.connect();
         });
