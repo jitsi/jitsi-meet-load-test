@@ -46,6 +46,7 @@ class LoadTestClient {
         this.selectedParticipant = null;
         this.config = config;
         this.localAudio = localAudio;
+        this.visitor = false;
 
         this.updateConfig();
     }
@@ -168,6 +169,10 @@ class LoadTestClient {
             localAudioTrack?.mute();
         }
         else {
+            if (this.visitor) {
+                console.warn(`Participant ${this.id}: In visitor mode, not unmuting audio.`);
+                return;
+            }
             if (localAudioTrack) {
                 localAudioTrack.unmute();
             }
@@ -378,6 +383,11 @@ class LoadTestClient {
      * @returns {void}
      */
     onVideoOnMessage() {
+        if (this.visitor) {
+            console.warn(`Participant ${this.id}: In visitor mode, not turning video on.`);
+            return;
+        }
+
         console.debug(`Participant ${this.id}: Turning my video on!`);
 
         const localVideoTrack = this.room.getLocalVideoTrack();
@@ -401,12 +411,14 @@ class LoadTestClient {
     }
 
     onConferenceFailed(error, vnode, from) {
-        console.error(error);
         if (error !== JitsiMeetJS.errors.conference.REDIRECTED) {
+            console.error(error);
             return;
         }
 
         this.connection.disconnect().then(() => {
+            console.log(`Participant ${this.id}: redirecting to visitor node`)
+            this.visitor = true;
             const oldDomain = this.config.hosts.domain;
 
             this.config.hosts.domain = `${vnode}.meet.jitsi`;
@@ -418,6 +430,8 @@ class LoadTestClient {
             this.config.bosh = appendURLParam(this.config.bosh, "vnode", vnode);
             this.config.websocket = appendURLParam(this.config.websocket, "vnode", vnode);
             this.config.websocketKeepAliveUrl = appendURLParam(this.config.websocketKeepAliveUrl, "vnode", vnode);
+
+            this.localTracks.forEach((track) => track.mute());
 
             this.updateConfig();
             this.connect();
@@ -457,12 +471,14 @@ class LoadTestClient {
 
         const devices = [];
 
-        if (localVideo) {
-            devices.push('video');
-        }
+        if (!this.visitor) {
+            if (localVideo) {
+                devices.push('video');
+            }
 
-        if (!config.disableInitialGUM) {
-            devices.push('audio');
+            if (!config.disableInitialGUM) {
+                devices.push('audio');
+            }
         }
 
         if (devices.length > 0) {
