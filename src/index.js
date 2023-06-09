@@ -1,11 +1,13 @@
 /* global $, config, JitsiMeetJS */
 
 import 'jquery';
+import Logger from '@jitsi/logger';
 
 import { setConfigFromURLParams } from './configUtils';
 import { parseURLParams } from './parseURLParams';
 import { parseURIString } from './uri';
 import { validateLastNLimits, limitLastN } from './lastN';
+import JitsiMeetInMemoryLogStorage from './JitsiMeetInMemoryLogStorage';
 
 setConfigFromURLParams(config, {}, {}, window.location);
 
@@ -569,6 +571,13 @@ $(window).bind('beforeunload', unload);
 $(window).bind('unload', unload);
 
 JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.TRACE);
+APP.debugLogs = new JitsiMeetInMemoryLogStorage();
+const debugLogCollector = new Logger.LogCollector(APP.debugLogs, { storeInterval: 1000 });
+
+Logger.addGlobalTransport(debugLogCollector);
+JitsiMeetJS.addGlobalLogTransport(debugLogCollector);
+debugLogCollector.start();
+
 JitsiMeetJS.init(config);
 
 function startClient(i) {
