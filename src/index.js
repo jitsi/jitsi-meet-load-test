@@ -104,6 +104,7 @@ class LoadTestClient {
                  this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight ||
                  this.receiverConstraints.onStageSources[0] !== onStageSource) {
                     this.receiverConstraints.lastN = lastN;
+                    this.receiverConstraints.constraints = {};
                     this.receiverConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
                     if (onStageSource) {
                         this.receiverConstraints.onStageSources[0] = onStageSource
