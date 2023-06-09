@@ -1,13 +1,15 @@
 /* global $, config, JitsiMeetJS */
 
 import 'jquery';
-import Logger from '@jitsi/logger';
+import Logger, { getLogger } from '@jitsi/logger';
 
 import { setConfigFromURLParams } from './configUtils';
 import { parseURLParams } from './parseURLParams';
 import { parseURIString } from './uri';
 import { validateLastNLimits, limitLastN } from './lastN';
 import JitsiMeetInMemoryLogStorage from './JitsiMeetInMemoryLogStorage';
+
+const logger = getLogger('load-test-client');
 
 setConfigFromURLParams(config, {}, {}, window.location);
 
@@ -66,6 +68,7 @@ class LoadTestClient {
      */
     updateReceiverConstraints() {
         if (!this.dataChannelOpen) {
+
             return;
         }
 
@@ -160,7 +163,7 @@ class LoadTestClient {
         }
         else {
             if (this.visitor) {
-                console.warn(`Participant ${this.id}: In visitor mode, not unmuting audio.`);
+                logger.warn(`Participant ${this.id}: In visitor mode, not unmuting audio.`);
                 return;
             }
             if (localAudioTrack) {
@@ -176,7 +179,7 @@ class LoadTestClient {
                 else {
                     JitsiMeetJS.createLocalTracks({ devices: ['audio'] })
                         .then(([audioTrack]) => audioTrack)
-                        .catch(console.error)
+                        .catch(logger.error)
                         .then(audioTrack => {
                             return this.room.addTrack(audioTrack);
                         })
@@ -278,7 +281,7 @@ class LoadTestClient {
      * That function is executed when the conference is joined
      */
     onConferenceJoined() {
-        console.log(`Participant ${this.id} Conference joined`);
+        logger.log(`Participant ${this.id} Conference joined`);
 
         // Delay processing USER_JOINED events until the MUC is fully joined,
         // otherwise the apparent conference size will be wrong.
@@ -367,40 +370,40 @@ class LoadTestClient {
      */
     onVideoOnMessage() {
         if (this.visitor) {
-            console.warn(`Participant ${this.id}: In visitor mode, not turning video on.`);
+            logger.warn(`Participant ${this.id}: In visitor mode, not turning video on.`);
             return;
         }
 
-        console.debug(`Participant ${this.id}: Turning my video on!`);
+        logger.debug(`Participant ${this.id}: Turning my video on!`);
 
         const localVideoTrack = this.room.getLocalVideoTrack();
 
         if (localVideoTrack && localVideoTrack.isMuted()) {
-            console.debug(`Participant ${this.id}: Unmuting existing video track.`);
+            logger.debug(`Participant ${this.id}: Unmuting existing video track.`);
             localVideoTrack.unmute();
         } else if (!localVideoTrack) {
             JitsiMeetJS.createLocalTracks({ devices: ['video'] })
                 .then(([videoTrack]) => videoTrack)
-                .catch(console.error)
+                .catch(logger.error)
                 .then(videoTrack => {
                     return this.room.replaceTrack(null, videoTrack);
                 })
                 .then(() => {
-                    console.debug(`Participant ${this.id}: Successfully added a new video track for unmute.`);
+                    logger.debug(`Participant ${this.id}: Successfully added a new video track for unmute.`);
                 });
         } else {
-            console.log(`Participant ${this.id}: No-op! We are already video unmuted!`);
+            logger.log(`Participant ${this.id}: No-op! We are already video unmuted!`);
         }
     }
 
     onConferenceFailed(error, vnode, from) {
         if (error !== JitsiMeetJS.errors.conference.REDIRECTED) {
-            console.error(error);
+            logger.error(error);
             return;
         }
 
         this.connection.disconnect().then(() => {
-            console.log(`Participant ${this.id}: redirecting to visitor node`)
+            logger.log(`Participant ${this.id}: redirecting to visitor node`)
             this.visitor = true;
             const oldDomain = this.config.hosts.domain;
 
@@ -482,14 +485,14 @@ class LoadTestClient {
      * This function is called when the connection fail.
      */
     onConnectionFailed() {
-        console.error(`Participant ${this.id}: Connection Failed!`);
+        logger.error(`Participant ${this.id}: Connection Failed!`);
     }
 
     /**
      * This function is called when we disconnect.
      */
     disconnect() {
-        console.log('disconnect!');
+        logger.log('disconnect!');
         this.connection.removeEventListener(
             JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
             this._onConnectionSuccess);
