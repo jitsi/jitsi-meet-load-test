@@ -287,6 +287,7 @@ class LoadTestClient {
         this.numParticipants = this.room.getParticipantCount();
         this.setNumberOfParticipants();
         this.room.on(JitsiMeetJS.events.conference.USER_JOINED, this.onUserJoined.bind(this));
+        this.room.on(JitsiMeetJS.events.conference._MEDIA_SESSION_STARTED, this.onMediaSessionStarted.bind(this));
     }
 
     /**
@@ -318,6 +319,13 @@ class LoadTestClient {
         this.numParticipants++;
         this.setNumberOfParticipants();
         this.remoteTracks[id] = [];
+    }
+
+    /**
+     * Media session started.
+     */
+    onMediaSessionStarted() {
+        this.updateReceiverConstraints();
     }
 
     /**
