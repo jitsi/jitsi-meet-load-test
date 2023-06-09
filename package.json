@@ -8,6 +8,7 @@
   },
   "readmeFilename": "README.md",
   "dependencies": {
+    "@jitsi/logger": "2.0.0",
     "jquery": "3.5.1"
   },
   "devDependencies": {
