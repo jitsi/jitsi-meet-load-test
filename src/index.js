@@ -66,7 +66,7 @@ class LoadTestClient {
     /**
      * Simple emulation of jitsi-meet's receiver constraints behavior
      */
-    updateReceiverConstraints() {
+    updateReceiverConstraints(force = false) {
         if (!this.dataChannelOpen) {
 
             return;
@@ -105,9 +105,10 @@ class LoadTestClient {
         }
 
         if (this.room) {
-            if (this.receiverConstraints.lastN !== lastN ||
-                 this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight ||
-                 this.receiverConstraints.onStageSources[0] !== onStageSource) {
+            if (force
+                || this.receiverConstraints.lastN !== lastN
+                || this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight
+                || this.receiverConstraints.onStageSources[0] !== onStageSource) {
                     this.receiverConstraints.lastN = lastN;
                     this.receiverConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
                     if (onStageSource) {
@@ -325,7 +326,7 @@ class LoadTestClient {
      * Media session started.
      */
     onMediaSessionStarted() {
-        this.updateReceiverConstraints();
+        this.updateReceiverConstraints(true);
     }
 
     /**
