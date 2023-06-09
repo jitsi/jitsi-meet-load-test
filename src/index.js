@@ -68,7 +68,7 @@ class LoadTestClient {
      */
     updateReceiverConstraints() {
         if (!this.dataChannelOpen) {
-
+            logger.warn('Data channel not open not updating updateReceiverConstraints');
             return;
         }
 
@@ -119,7 +119,15 @@ class LoadTestClient {
                     }
 
                     this.room.setReceiverConstraints(this.receiverConstraints)
-                 }
+                 } else {
+                logger.warn(`not updating updateReceiverConstraints receiverConstraints.lastN:${
+                    this.receiverConstraints.lastN} lastN:${lastN} defaultConstraints.maxHeight:${
+                    this.receiverConstraints.defaultConstraints.maxHeight} newMaxFrameHeight:${
+                    newMaxFrameHeight} onStageSources[0]:${this.receiverConstraints.onStageSources[0]} onStageSource:${
+                    onStageSource}`);
+            }
+        } else {
+            logger.warn('No room so not updating updateReceiverConstraints');
         }
     }
 
