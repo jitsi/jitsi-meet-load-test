@@ -115,10 +115,10 @@ class LoadTestClient {
                     newConstraints.lastN = lastN;
                     newConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
                     if (onStageSource) {
-                        newConstraints.onStageSources[0] = onStageSource
+                        newConstraints.onStageSources[0] = onStageSource;
                     }
                     else {
-                        newConstraints.onStageSources.length = 0
+                        newConstraints.onStageSources = [];
                     }
 
                     this.room.setReceiverConstraints(newConstraints);
