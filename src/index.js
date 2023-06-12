@@ -1,5 +1,6 @@
 /* global $, config, JitsiMeetJS */
 
+import _ from 'lodash';
 import 'jquery';
 import Logger, { getLogger } from '@jitsi/logger';
 
@@ -109,16 +110,18 @@ class LoadTestClient {
                 || this.receiverConstraints.lastN !== lastN
                 || this.receiverConstraints.defaultConstraints.maxHeight !== newMaxFrameHeight
                 || this.receiverConstraints.onStageSources[0] !== onStageSource) {
-                    this.receiverConstraints.lastN = lastN;
-                    this.receiverConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
+                    const newConstraints = _.cloneDeep(this.receiverConstraints);
+
+                    newConstraints.lastN = lastN;
+                    newConstraints.defaultConstraints.maxHeight = newMaxFrameHeight;
                     if (onStageSource) {
-                        this.receiverConstraints.onStageSources[0] = onStageSource
+                        newConstraints.onStageSources[0] = onStageSource
                     }
                     else {
-                        this.receiverConstraints.onStageSources.length = 0
+                        newConstraints.onStageSources.length = 0
                     }
 
-                    this.room.setReceiverConstraints(this.receiverConstraints)
+                    this.room.setReceiverConstraints(newConstraints);
                  }
         }
     }
