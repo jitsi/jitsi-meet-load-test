@@ -412,16 +412,18 @@ class LoadTestClient {
             logger.error(error);
             return;
         }
+    }
 
+    onConnectionRedirected(vnode, focusJid) {
+        logger.log(`Participant ${this.id}: redirecting to visitor node ${vnode} with focusJid=${focusJid}`);
         this.connection.disconnect().then(() => {
-            logger.log(`Participant ${this.id}: redirecting to visitor node`)
             this.visitor = true;
             const oldDomain = this.config.hosts.domain;
 
             this.config.hosts.domain = `${vnode}.meet.jitsi`;
             //this.config.visitorTo = `${roomName.toLowerCase()}@${this.config.hosts.muc}`;
             this.config.hosts.muc = this.config.hosts.muc.replace(oldDomain, this.config.hosts.domain);
-            this.config.focusUserJid = from;
+            this.config.focusUserJid = focusJid;
             this.config.disableFocus = true;
 
             this.config.bosh = appendURLParam(this.config.bosh, "vnode", vnode);
@@ -441,12 +443,14 @@ class LoadTestClient {
     connect() {
         this._onConnectionSuccess = this.onConnectionSuccess.bind(this)
         this._onConnectionFailed = this.onConnectionFailed.bind(this)
+        this._onConnectionRedirected = this.onConnectionRedirected.bind(this)
         this._disconnect = this.disconnect.bind(this)
 
         this.connection = new JitsiMeetJS.JitsiConnection(null, null, this.config);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED, this._onConnectionSuccess);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_FAILED, this._onConnectionFailed);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, this._disconnect);
+        this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_REDIRECTED, this._onConnectionRedirected);
         this.connection.connect();
     }
 
