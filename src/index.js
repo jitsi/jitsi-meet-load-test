@@ -451,7 +451,7 @@ class LoadTestClient {
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_FAILED, this._onConnectionFailed);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, this._disconnect);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_REDIRECTED, this._onConnectionRedirected);
-        this.connection.connect();
+        this.connection.connect({ name: roomName });
     }
 
     /**
