@@ -10,6 +10,7 @@
   "dependencies": {
     "@jitsi/logger": "2.0.2",
     "jquery": "3.7.1",
+    "jwt-decode": "2.2.0",
     "lodash": "4.17.21"
   },
   "devDependencies": {
