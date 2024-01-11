@@ -446,7 +446,9 @@ class LoadTestClient {
         this._onConnectionRedirected = this.onConnectionRedirected.bind(this)
         this._disconnect = this.disconnect.bind(this)
 
-        this.connection = new JitsiMeetJS.JitsiConnection(null, null, this.config);
+        const params = parseURLParams(window.location, true, 'search');
+
+        this.connection = new JitsiMeetJS.JitsiConnection(null, params.jwt, this.config);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED, this._onConnectionSuccess);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_FAILED, this._onConnectionFailed);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, this._disconnect);
