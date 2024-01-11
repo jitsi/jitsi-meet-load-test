@@ -1,5 +1,6 @@
 /* global $, config, JitsiMeetJS */
 
+import jwtDecode from 'jwt-decode';
 import _ from 'lodash';
 import 'jquery';
 import Logger, { getLogger } from '@jitsi/logger';
@@ -447,8 +448,29 @@ class LoadTestClient {
         this._disconnect = this.disconnect.bind(this)
 
         const params = parseURLParams(window.location, true, 'search');
+        const jwt = params.jwt;
 
-        this.connection = new JitsiMeetJS.JitsiConnection(null, params.jwt, this.config);
+        if (jwt) {
+            let jwtPayload;
+
+            try {
+                jwtPayload = jwtDecode(jwt);
+            } catch (e) {
+                logger.error(e);
+            }
+
+            if (jwtPayload) {
+                const { context, iss, sub } = jwtPayload;
+
+                if (context) {
+                    if (context.user && context.user.role === 'visitor') {
+                        this.config.preferVisitor = true;
+                    }
+                }
+            }
+        }
+
+        this.connection = new JitsiMeetJS.JitsiConnection(null, jwt, this.config);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED, this._onConnectionSuccess);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_FAILED, this._onConnectionFailed);
         this.connection.addEventListener(JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED, this._disconnect);
